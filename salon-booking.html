@@ -339,7 +339,7 @@ function slotsForDate(d){
   if (wd === 5) return [];
   var morning = genSlots(8,0,12,0);
   if (wd === 4) return morning.map(function(t){return {time:t, period:'صبح'};}); // Thursday only morning
-  var evening = genSlots(16,0,21,0);
+  var evening = genSlots(16,0,21,0); evening.push('20:30'); evening.sort();
   return morning.map(function(t){return {time:t, period:'صبح'};})
     .concat(evening.map(function(t){return {time:t, period:'عصر'};}));
 }
