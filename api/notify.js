@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     var r = await fetch('https://console.melipayamak.com/api/send/simple/e2c4164507f64305a4e488f79729e300', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: '50004001106984', to: '09106984220', text: msg })
+      body: JSON.stringify({ from: '10000291547590', to: '09382838181', text: msg })
     });
     var data = await r.text();
     res.status(200).json({ ok: true, status: r.status, data: data });
