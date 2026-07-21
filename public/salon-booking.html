@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#16302B">
+<title>نوبت‌دهی آرایشگاه سبحان</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#12211D;
+    --bg:#16302B;
+    --bg-soft:#1E3E37;
+    --card:#234A42;
+    --gold:#C9A24B;
+    --gold-soft:#E4C776;
+    --ivory:#F3EFE6;
+    --ivory-dim:#CFC9BA;
+    --taken:#5A4A46;
+    --taken-text:#B79A93;
+    --danger:#B5544A;
+    --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Vazirmatn', Tahoma, sans-serif;
+    background:var(--bg);
+    color:var(--ivory);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  .app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background:linear-gradient(180deg,var(--bg) 0%, var(--bg) 60%, var(--bg-soft) 100%);
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  /* comb-teeth signature divider */
+  .comb{
+    height:14px;
+    width:100%;
+    background:repeating-linear-gradient(90deg, var(--gold) 0 2px, transparent 2px 14px);
+    opacity:.85;
+  }
+  header{
+    padding:22px 20px 16px;
+    text-align:center;
+    position:relative;
+  }
+  header h1{
+    margin:0;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:.3px;
+    color:var(--gold-soft);
+  }
+  header p{
+    margin:6px 0 0;
+    font-size:13px;
+    color:var(--ivory-dim);
+  }
+  nav.tabs{
+    display:flex;
+    margin:6px 16px 0;
+    background:var(--bg-soft);
+    border-radius:999px;
+    padding:4px;
+    gap:4px;
+  }
+  nav.tabs button{
+    flex:1;
+    border:none;
+    background:transparent;
+    color:var(--ivory-dim);
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    padding:10px 8px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  nav.tabs button.active{
+    background:var(--gold);
+    color:var(--ink);
+  }
+  main{
+    flex:1;
+    padding:18px 16px 40px;
+    overflow-y:auto;
+  }
+  /* day selector */
+  .day-scroll{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:4px 2px 14px;
+    scrollbar-width:none;
+  }
+  .day-scroll::-webkit-scrollbar{display:none;}
+  .day-chip{
+    flex:0 0 auto;
+    min-width:58px;
+    background:var(--card);
+    border:1.5px solid transparent;
+    border-radius:14px;
+    padding:10px 6px;
+    text-align:center;
+    cursor:pointer;
+    color:var(--ivory-dim);
+    transition:all .15s;
+  }
+  .day-chip .wd{font-size:11.5px; font-weight:600;}
+  .day-chip .dn{font-size:17px; font-weight:800; margin-top:3px; color:var(--ivory);}
+  .day-chip.selected{
+    border-color:var(--gold);
+    background:linear-gradient(160deg,var(--card),var(--bg-soft));
+  }
+  .day-chip.selected .wd, .day-chip.selected .dn{color:var(--gold-soft);}
+  .day-chip.closed{opacity:.35; cursor:not-allowed;}
+
+  .section-label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:18px 2px 10px;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--gold-soft);
+  }
+  .section-label::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background:repeating-linear-gradient(90deg, var(--gold) 0 3px, transparent 3px 8px);
+    opacity:.5;
+  }
+  .slots{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:9px;
+  }
+  .slot{
+    border:1.5px solid var(--card);
+    background:var(--card);
+    color:var(--ivory);
+    border-radius:12px;
+    padding:12px 4px;
+    text-align:center;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .15s;
+    font-family:inherit;
+  }
+  .slot:active{transform:scale(.96);}
+  .slot.taken{
+    background:transparent;
+    border-color:var(--taken);
+    color:var(--taken-text);
+    cursor:not-allowed;
+    font-weight:500;
+  }
+  .slot.taken small{display:block; font-size:10px; font-weight:500; margin-top:2px;}
+  .empty-note{
+    text-align:center;
+    color:var(--ivory-dim);
+    font-size:13.5px;
+    padding:30px 10px;
+    line-height:2;
+  }
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(10,18,16,.6);
+    display:flex; align-items:flex-end; justify-content:center;
+    z-index:50;
+  }
+  .overlay.hidden{display:none;}
+  .sheet{
+    width:100%; max-width:480px;
+    background:var(--bg-soft);
+    border-radius:22px 22px 0 0;
+    padding:22px 20px 28px;
+    animation:up .22s ease;
+  }
+  @keyframes up{from{transform:translateY(24px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet h3{margin:0 0 4px; font-size:17px; color:var(--gold-soft);}
+  .sheet .sub{color:var(--ivory-dim); font-size:13px; margin-bottom:18px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; color:var(--ivory-dim); margin-bottom:6px;}
+  .field input{
+    width:100%;
+    background:var(--card);
+    border:1.5px solid transparent;
+    border-radius:10px;
+    padding:12px 14px;
+    color:var(--ivory);
+    font-family:inherit;
+    font-size:15px;
+  }
+  .field input:focus{outline:none; border-color:var(--gold);}
+  .btn-row{display:flex; gap:10px; margin-top:6px;}
+  .btn{
+    flex:1;
+    border:none;
+    border-radius:12px;
+    padding:14px;
+    font-family:inherit;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn.primary{background:var(--gold); color:var(--ink);}
+  .btn.ghost{background:transparent; color:var(--ivory-dim); border:1.5px solid var(--card);}
+  .btn:disabled{opacity:.5;}
+  .msg{font-size:13px; margin-top:10px; text-align:center;}
+  .msg.err{color:#E9948B;}
+  .msg.ok{color:#8FCB9A;}
+
+  /* admin */
+  .pin-box{
+    display:flex; flex-direction:column; align-items:center;
+    padding:60px 20px; text-align:center; gap:14px;
+  }
+  .pin-box p{color:var(--ivory-dim); font-size:13.5px; margin:0 0 6px;}
+  .pin-box input{
+    width:160px; text-align:center; letter-spacing:8px; font-size:20px;
+    background:var(--card); border:1.5px solid var(--card); border-radius:12px;
+    padding:12px; color:var(--ivory); font-family:inherit;
+  }
+  .admin-day{margin-bottom:22px;}
+  .admin-day h4{
+    font-size:14px; color:var(--gold-soft); margin:0 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .booking-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--card); border-radius:12px; padding:12px 14px; margin-bottom:8px;
+  }
+  .booking-row .info{display:flex; flex-direction:column; gap:2px;}
+  .booking-row .time{font-weight:800; color:var(--gold-soft); font-size:14px;}
+  .booking-row .name{font-size:13.5px; color:var(--ivory);}
+  .booking-row .phone{font-size:12px; color:var(--ivory-dim); direction:ltr; text-align:right;}
+  .cancel-btn{
+    background:transparent; border:1.5px solid var(--danger); color:#E9948B;
+    border-radius:9px; padding:8px 12px; font-family:inherit; font-size:12px; cursor:pointer;
+  }
+  .loading{text-align:center; color:var(--ivory-dim); padding:40px; font-size:13.5px;}
+  footer{
+    text-align:center; padding:14px; font-size:11px; color:var(--ivory-dim); opacity:.6;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="comb"></div>
+  <header>
+    <h1>آرایشگاه سبحان</h1>
+    <p>رزرو آنلاین نوبت</p>
+  </header>
+  <nav class="tabs">
+    <button id="tabBook" class="active">رزرو نوبت</button>
+    <button id="tabAdmin">پنل مدیریت</button>
+  </nav>
+
+  <main id="mainBook">
+    <div class="day-scroll" id="dayScroll"></div>
+    <div id="slotsWrap"></div>
+  </main>
+
+  <main id="mainAdmin" style="display:none;">
+    <div id="adminContent"></div>
+  </main>
+
+  <footer>برای دسترسی سریع‌تر، این صفحه را به صفحه اصلی گوشی اضافه کنید</footer>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="sheet">
+    <h3 id="sheetTitle">رزرو نوبت</h3>
+    <div class="sub" id="sheetSub"></div>
+    <div class="field">
+      <label>نام و نام خانوادگی</label>
+      <input id="custName" placeholder="مثلاً سارا محمدی" maxlength="40">
+    </div>
+    <div class="field">
+      <label>شماره تماس</label>
+      <input id="custPhone" placeholder="09xxxxxxxxx" maxlength="11" inputmode="numeric" style="direction:ltr; text-align:right;">
+    </div>
+    <div class="btn-row">
+      <button class="btn ghost" id="cancelBtn">انصراف</button>
+      <button class="btn primary" id="confirmBtn">تایید رزرو</button>
+    </div>
+    <div class="msg" id="sheetMsg"></div>
+  </div>
+</div>
+
+<script>
+// ---------- date / jalali helpers ----------
+function toJalali(gy, gm, gd){
+  var g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+  var jy = (gy <= 1600) ? 0 : 979;
+  gy -= (gy <= 1600) ? 621 : 1600;
+  var gy2 = (gm > 2) ? (gy + 1) : gy;
+  var days = (365*gy) + (parseInt((gy2+3)/4)) - parseInt((gy2+99)/100) + parseInt((gy2+399)/400) - 80 + gd + g_d_m[gm-1];
+  jy += 33*parseInt(days/12053);
+  days %= 12053;
+  jy += 4*parseInt(days/1461);
+  days %= 1461;
+  if (days > 365){ jy += parseInt((days-1)/365); days = (days-1)%365; }
+  var jm = (days < 186) ? 1 + parseInt(days/31) : 7 + parseInt((days-186)/30);
+  var jd = 1 + ((days < 186) ? (days%31) : ((days-186)%30));
+  return [jy, jm, jd];
+}
+var jMonths = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+var weekdays = ["یکشنبه","دوشنبه","سه‌شنبه","چهارشنبه","پنجشنبه","جمعه","شنبه"]; // JS getDay(): 0=Sun
+
+function fmtISO(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function faDigits(str){
+  var fa=['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  return String(str).replace(/[0-9]/g, function(d){ return fa[d]; });
+}
+
+// ---------- schedule rules ----------
+// returns array of {time:'HH:MM'} for a given JS Date's weekday
+function slotsForDate(d){
+  var wd = d.getDay(); // 0 Sun ... 6 Sat
+  // Friday = 5 -> closed
+  if (wd === 5) return [];
+  var morning = genSlots(8,0,12,0);
+  if (wd === 4) return morning.map(function(t){return {time:t, period:'صبح'};}); // Thursday only morning
+  var evening = genSlots(16,0,21,0); evening.push('20:30'); evening.sort();
+  return morning.map(function(t){return {time:t, period:'صبح'};})
+    .concat(evening.map(function(t){return {time:t, period:'عصر'};}));
+}
+function genSlots(sh, sm, eh, em){
+  var res = [];
+  var cur = sh*60+sm, end = eh*60+em;
+  while (cur + 45 <= end){
+    var h = Math.floor(cur/60), m = cur%60;
+    res.push(String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'));
+    cur += 45;
+  }
+  return res;
+}
+
+// ---------- state ----------
+var today = new Date();
+today.setHours(0,0,0,0);
+var days = [];
+for (var i=0;i<14;i++){ var d=new Date(today); d.setDate(d.getDate()+i); days.push(d); }
+var selectedISO = null;
+var currentSlotSel = null; // {iso, time}
+
+// ---------- SMS notification (via our own serverless relay) ----------
+async function notifyOwnerSMS(jalaliDateStr, time, name, phone){
+  try{
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ dateLabel: jalaliDateStr, time: time, name: name, phone: phone })
+    });
+  }catch(e){ /* silent fail - booking already succeeded, don't block the customer */ }
+}
+
+// ---------- storage helpers (Upstash Redis REST API) ----------
+var UPSTASH_URL = "https://joint-antelope-145771.upstash.io";
+var UPSTASH_TOKEN = "gQAAAAAAAjlrAAIgcDI5YTdmNzM0MDQwY2Y0NmI1ODViMzZiMGZkZWNjMWY5Mg";
+
+async function getDateBookings(iso){
+  try{
+    var res = await fetch(UPSTASH_URL + '/get/bookings:' + iso, {
+      headers: { 'Authorization': 'Bearer ' + UPSTASH_TOKEN }
+    });
+    var data = await res.json();
+    return data.result ? JSON.parse(data.result) : {};
+  }catch(e){ return {}; }
+}
+async function setDateBookings(iso, obj){
+  try{
+    var res = await fetch(UPSTASH_URL + '/set/bookings:' + iso, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + UPSTASH_TOKEN, 'Content-Type': 'text/plain' },
+      body: JSON.stringify(obj)
+    });
+    var data = await res.json();
+    return data.result === 'OK';
+  }catch(e){ return false; }
+}
+
+// ---------- outage (power cut) storage helpers ----------
+async function getDateOutages(iso){
+  try{
+    var res = await fetch(UPSTASH_URL + '/get/outages:' + iso, {
+      headers: { 'Authorization': 'Bearer ' + UPSTASH_TOKEN }
+    });
+    var data = await res.json();
+    return data.result ? JSON.parse(data.result) : [];
+  }catch(e){ return []; }
+}
+async function setDateOutages(iso, arr){
+  try{
+    var res = await fetch(UPSTASH_URL + '/set/outages:' + iso, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + UPSTASH_TOKEN, 'Content-Type': 'text/plain' },
+      body: JSON.stringify(arr)
+    });
+    var data = await res.json();
+    return data.result === 'OK';
+  }catch(e){ return false; }
+}
+
+// ---------- render day scroll ----------
+function renderDays(){
+  var wrap = document.getElementById('dayScroll');
+  wrap.innerHTML = '';
+  days.forEach(function(d){
+    var iso = fmtISO(d);
+    var closed = d.getDay() === 5;
+    var chip = document.createElement('div');
+    chip.className = 'day-chip'+(iso===selectedISO?' selected':'')+(closed?' closed':'');
+    var jd = toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    chip.innerHTML = '<div class="wd">'+weekdays[d.getDay()]+'</div><div class="dn">'+faDigits(jd[2])+'</div>';
+    if (!closed){
+      chip.onclick = function(){ selectedISO = iso; renderDays(); loadSlots(iso); };
+    }
+    wrap.appendChild(chip);
+  });
+}
+
+async function loadSlots(iso){
+  var wrap = document.getElementById('slotsWrap');
+  wrap.innerHTML = '<div class="loading">در حال بارگذاری...</div>';
+  var d = days.find(function(x){ return fmtISO(x)===iso; });
+  var slots = slotsForDate(d);
+  var booked = await getDateBookings(iso);
+  var outages = await getDateOutages(iso);
+
+  if (slots.length === 0){
+    wrap.innerHTML = '<div class="empty-note">این روز آرایشگاه تعطیل است 🌿</div>';
+    return;
+  }
+  var morning = slots.filter(function(s){return s.period==='صبح';});
+  var evening = slots.filter(function(s){return s.period==='عصر';});
+  var html = '';
+  function block(title, arr){
+    if (arr.length===0) return '';
+    var h = '<div class="section-label">'+title+'</div><div class="slots">';
+    arr.forEach(function(s){
+      var isTaken = !!booked[s.time];
+      var isOutage = outages.indexOf(s.time) !== -1;
+      var blocked = isTaken || isOutage;
+      var label = isOutage ? '<small>قطع برق ⚡</small>' : (isTaken ? '<small>رزرو شده</small>' : '');
+      h += '<button class="slot'+(blocked?' taken':'')+'" data-time="'+s.time+'" '+(blocked?'disabled':'')+'>'+
+        faDigits(s.time)+label+'</button>';
+    });
+    h += '</div>';
+    return h;
+  }
+  html += block('صبح', morning);
+  html += block('عصر', evening);
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.slot:not(.taken)').forEach(function(btn){
+    btn.onclick = function(){ openBookingSheet(iso, btn.getAttribute('data-time')); };
+  });
+}
+
+// ---------- booking sheet ----------
+function openBookingSheet(iso, time){
+  currentSlotSel = {iso:iso, time:time};
+  var d = days.find(function(x){ return fmtISO(x)===iso; });
+  var jd = toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+  document.getElementById('sheetTitle').textContent = 'رزرو نوبت';
+  document.getElementById('sheetSub').textContent =
+    weekdays[d.getDay()]+' '+faDigits(jd[2])+' '+jMonths[jd[1]-1]+' — ساعت '+faDigits(time);
+  document.getElementById('custName').value = '';
+  document.getElementById('custPhone').value = '';
+  document.getElementById('sheetMsg').textContent = '';
+  document.getElementById('confirmBtn').disabled = false;
+  document.getElementById('overlay').classList.remove('hidden');
+}
+function closeSheet(){
+  document.getElementById('overlay').classList.add('hidden');
+  currentSlotSel = null;
+}
+document.getElementById('cancelBtn').onclick = closeSheet;
+document.getElementById('overlay').onclick = function(e){ if(e.target.id==='overlay') closeSheet(); };
+
+document.getElementById('confirmBtn').onclick = async function(){
+  var name = document.getElementById('custName').value.trim();
+  var phone = document.getElementById('custPhone').value.trim();
+  var msg = document.getElementById('sheetMsg');
+  if (!name){ msg.textContent='لطفاً نام خود را وارد کنید'; msg.className='msg err'; return; }
+  if (!phone || phone.length < 10){ msg.textContent='شماره تماس معتبر وارد کنید'; msg.className='msg err'; return; }
+  var btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  msg.textContent = 'در حال ثبت...'; msg.className='msg';
+
+  var iso = currentSlotSel.iso, time = currentSlotSel.time;
+  var latest = await getDateBookings(iso);
+  if (latest[time]){
+    msg.textContent = 'متأسفانه این نوبت همین الان توسط شخص دیگری رزرو شد.';
+    msg.className = 'msg err';
+    btn.disabled = false;
+    loadSlots(iso);
+    return;
+  }
+  latest[time] = { name: name, phone: phone, ts: Date.now() };
+  var res = await setDateBookings(iso, latest);
+  if (!res){
+    msg.textContent = 'خطا در ثبت نوبت. دوباره تلاش کنید.';
+    msg.className = 'msg err';
+    btn.disabled = false;
+    return;
+  }
+  msg.textContent = 'نوبت شما با موفقیت ثبت شد ✓';
+  msg.className = 'msg ok';
+  var d2 = days.find(function(x){ return fmtISO(x)===iso; });
+  var jd2 = toJalali(d2.getFullYear(), d2.getMonth()+1, d2.getDate());
+  var dateLabel = weekdays[d2.getDay()]+' '+faDigits(jd2[2])+' '+jMonths[jd2[1]-1];
+  notifyOwnerSMS(dateLabel, time, name, phone);
+  setTimeout(function(){
+    closeSheet();
+    loadSlots(iso);
+  }, 1100);
+};
+
+// ---------- tabs ----------
+document.getElementById('tabBook').onclick = function(){
+  document.getElementById('tabBook').classList.add('active');
+  document.getElementById('tabAdmin').classList.remove('active');
+  document.getElementById('mainBook').style.display='';
+  document.getElementById('mainAdmin').style.display='none';
+};
+document.getElementById('tabAdmin').onclick = function(){
+  document.getElementById('tabAdmin').classList.add('active');
+  document.getElementById('tabBook').classList.remove('active');
+  document.getElementById('mainAdmin').style.display='';
+  document.getElementById('mainBook').style.display='none';
+  renderAdmin();
+};
+
+// ---------- admin ----------
+var ADMIN_PIN = '4511'; // پین پنل مدیریت
+var adminUnlocked = false;
+
+function renderAdmin(){
+  var wrap = document.getElementById('adminContent');
+  if (!adminUnlocked){
+    wrap.innerHTML =
+      '<div class="pin-box">'+
+      '<p>برای مشاهده و مدیریت نوبت‌ها، رمز عبور را وارد کنید</p>'+
+      '<input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••">'+
+      '<button class="btn primary" id="pinBtn" style="width:160px;">ورود</button>'+
+      '<div class="msg err" id="pinMsg"></div>'+
+      '</div>';
+    document.getElementById('pinBtn').onclick = function(){
+      var v = document.getElementById('pinInput').value.trim();
+      if (v === ADMIN_PIN){
+        adminUnlocked = true;
+        renderAdmin();
+      } else {
+        document.getElementById('pinMsg').textContent = 'رمز اشتباه است';
+      }
+    };
+    return;
+  }
+  wrap.innerHTML =
+    '<div class="admin-tabs" style="display:flex; gap:8px; margin-bottom:16px;">'+
+    '<button class="btn ghost admin-subtab" data-tab="bookings" style="flex:1; padding:10px;">نوبت‌ها</button>'+
+    '<button class="btn ghost admin-subtab" data-tab="outage" style="flex:1; padding:10px;">قطعی برق</button>'+
+    '<button class="btn ghost" id="lockBtn" style="flex:none; padding:10px 14px;">قفل</button>'+
+    '</div>'+
+    '<div id="adminSubContent"><div class="loading">در حال بارگذاری...</div></div>';
+  document.getElementById('lockBtn').onclick = function(){ adminUnlocked=false; renderAdmin(); };
+  wrap.querySelectorAll('.admin-subtab').forEach(function(btn){
+    btn.onclick = function(){
+      adminSubTab = btn.getAttribute('data-tab');
+      renderAdminSubtabStyles();
+      if (adminSubTab === 'bookings') loadAllAdminBookings();
+      else renderOutagePanel();
+    };
+  });
+  renderAdminSubtabStyles();
+  if (adminSubTab === 'bookings') loadAllAdminBookings();
+  else renderOutagePanel();
+}
+function renderAdminSubtabStyles(){
+  document.querySelectorAll('.admin-subtab').forEach(function(btn){
+    var active = btn.getAttribute('data-tab') === adminSubTab;
+    btn.style.background = active ? 'var(--gold)' : 'transparent';
+    btn.style.color = active ? 'var(--ink)' : 'var(--ivory-dim)';
+    btn.style.border = active ? 'none' : '1.5px solid var(--card)';
+  });
+}
+var adminSubTab = 'bookings';
+var adminOutageISO = null;
+
+async function loadAllAdminBookings(){
+  var wrap = document.getElementById('adminSubContent');
+  wrap.innerHTML = '<div class="loading">در حال بارگذاری نوبت‌ها...</div>';
+  var html = '';
+  var any = false;
+
+  for (var i=0;i<days.length;i++){
+    var d = days[i];
+    var iso = fmtISO(d);
+    var bookings = await getDateBookings(iso);
+    var times = Object.keys(bookings).sort();
+    if (times.length === 0) continue;
+    any = true;
+    var jd = toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    html += '<div class="admin-day"><h4>'+weekdays[d.getDay()]+' '+faDigits(jd[2])+' '+jMonths[jd[1]-1]+
+      ' <span style="color:var(--ivory-dim); font-weight:400;">('+faDigits(times.length)+' نوبت)</span></h4>';
+    times.forEach(function(t){
+      var b = bookings[t];
+      html += '<div class="booking-row">'+
+        '<div class="info"><div class="time">'+faDigits(t)+'</div>'+
+        '<div class="name">'+escapeHtml(b.name)+'</div>'+
+        '<div class="phone">'+escapeHtml(b.phone)+'</div></div>'+
+        '<button class="cancel-btn" data-iso="'+iso+'" data-time="'+t+'">لغو نوبت</button>'+
+        '</div>';
+    });
+    html += '</div>';
+  }
+  if (!any){
+    html += '<div class="empty-note">در ۱۴ روز آینده هنوز نوبتی ثبت نشده است</div>';
+  }
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.cancel-btn').forEach(function(btn){
+    btn.onclick = async function(){
+      var iso = btn.getAttribute('data-iso'), t = btn.getAttribute('data-time');
+      if (!confirm('نوبت ساعت '+t+' لغو شود؟')) return;
+      var b = await getDateBookings(iso);
+      delete b[t];
+      await setDateBookings(iso, b);
+      loadAllAdminBookings();
+    };
+  });
+}
+
+// ---------- outage (power cut) manager ----------
+async function renderOutagePanel(){
+  var wrap = document.getElementById('adminSubContent');
+  if (!adminOutageISO){
+    adminOutageISO = fmtISO(days.find(function(d){ return d.getDay() !== 5; }) || days[0]);
+  }
+  var dayChips = '<div class="day-scroll">';
+  days.forEach(function(d){
+    var iso = fmtISO(d);
+    var closed = d.getDay() === 5;
+    if (closed) return;
+    var jd = toJalali(d.getFullYear(), d.getMonth()+1, d.getDate());
+    dayChips += '<div class="day-chip'+(iso===adminOutageISO?' selected':'')+'" data-iso="'+iso+'">'+
+      '<div class="wd">'+weekdays[d.getDay()]+'</div><div class="dn">'+faDigits(jd[2])+'</div></div>';
+  });
+  dayChips += '</div>';
+  wrap.innerHTML = dayChips + '<div id="outageSlotsWrap"><div class="loading">در حال بارگذاری...</div></div>';
+
+  wrap.querySelectorAll('.day-chip').forEach(function(chip){
+    chip.onclick = function(){
+      adminOutageISO = chip.getAttribute('data-iso');
+      renderOutagePanel();
+    };
+  });
+
+  var d2 = days.find(function(x){ return fmtISO(x)===adminOutageISO; });
+  var slots = slotsForDate(d2);
+  var outages = await getDateOutages(adminOutageISO);
+  var slotsWrap = document.getElementById('outageSlotsWrap');
+  if (!slotsWrap) return; // user switched tab/date while loading
+
+  var morning = slots.filter(function(s){return s.period==='صبح';});
+  var evening = slots.filter(function(s){return s.period==='عصر';});
+  function block(title, arr){
+    if (arr.length===0) return '';
+    var h = '<div class="section-label">'+title+'</div><div class="slots">';
+    arr.forEach(function(s){
+      var isOut = outages.indexOf(s.time) !== -1;
+      h += '<button class="slot outage-toggle'+(isOut?' taken':'')+'" data-time="'+s.time+'">'+
+        faDigits(s.time)+(isOut?'<small>قطع برق ⚡</small>':'')+'</button>';
+    });
+    h += '</div>';
+    return h;
+  }
+  slotsWrap.innerHTML =
+    '<p style="color:var(--ivory-dim); font-size:12.5px; margin:6px 2px 14px;">روی هر ساعت بزنید تا وضعیت قطعی برق آن روشن/خاموش شود</p>'+
+    block('صبح', morning) + block('عصر', evening);
+
+  slotsWrap.querySelectorAll('.outage-toggle').forEach(function(btn){
+    btn.onclick = async function(){
+      var t = btn.getAttribute('data-time');
+      var idx = outages.indexOf(t);
+      if (idx === -1) outages.push(t); else outages.splice(idx,1);
+      await setDateOutages(adminOutageISO, outages);
+      renderOutagePanel();
+    };
+  });
+}
+
+function escapeHtml(s){
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ---------- init ----------
+renderDays();
+selectedISO = fmtISO(days.find(function(d){ return d.getDay() !== 5; }) || days[0]);
+renderDays();
+loadSlots(selectedISO);
+</script>
+</body>
+</html>
