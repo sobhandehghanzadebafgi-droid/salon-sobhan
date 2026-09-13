@@ -368,6 +368,30 @@
     font-size:15px;
   }
   .field input:focus{outline:none; border-color:var(--gold);}
+  .service-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--card); border:1.5px solid transparent; border-radius:10px;
+    padding:11px 12px; margin-bottom:7px; cursor:pointer; transition:all .15s;
+  }
+  .service-row.selected{
+    border-color:var(--gold);
+    background:linear-gradient(160deg,var(--card),var(--bg-soft));
+  }
+  .service-row .sinfo{display:flex; align-items:center; gap:10px;}
+  .service-row .schk{
+    width:19px; height:19px; border-radius:6px; border:1.5px solid var(--ivory-dim);
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--ink);
+    flex:0 0 auto;
+  }
+  .service-row.selected .schk{background:var(--gold); border-color:var(--gold);}
+  .service-row .sname{font-size:13.5px; color:var(--ivory);}
+  .service-row .sprice{font-size:12.5px; color:var(--gold-soft); font-weight:700; white-space:nowrap;}
+  .service-total-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--card); border-radius:10px; padding:12px 14px; margin-top:4px;
+  }
+  .service-total-bar .stl-label{font-size:12.5px; color:var(--ivory-dim);}
+  .service-total-bar .stl-val{font-size:16px; font-weight:800; color:var(--gold-soft);}
   .btn-row{display:flex; gap:10px; margin-top:6px;}
   .btn{
     flex:1;
@@ -498,6 +522,14 @@
         <label>توضیحات (اختیاری)</label>
         <textarea id="custNote" placeholder="مثلاً نوع خدمت یا درخواست خاص" maxlength="200" rows="3" style="width:100%; background:var(--card); border:1.5px solid transparent; border-radius:10px; padding:12px 14px; color:var(--ivory); font-family:inherit; font-size:14px; resize:vertical;"></textarea>
       </div>
+      <div class="field" id="serviceFieldWrap">
+        <label>خدمات مورد نیاز</label>
+        <div id="serviceList"></div>
+        <div class="service-total-bar">
+          <span class="stl-label">مجموع قیمت</span>
+          <span class="stl-val" id="serviceTotalVal">۰ تومان</span>
+        </div>
+      </div>
       <div class="btn-row">
         <button class="btn ghost" id="cancelBtn">انصراف</button>
         <button class="btn primary" id="confirmBtn">تایید رزرو</button>
@@ -509,6 +541,7 @@
       <div style="font-size:13px; color:var(--ivory-dim); margin-bottom:8px;">نوبت شما با موفقیت ثبت شد</div>
       <div id="successDate" style="font-size:16px; font-weight:700; color:var(--ivory); margin-bottom:2px;"></div>
       <div id="successTime" style="font-size:28px; font-weight:800; color:var(--gold-soft); margin-bottom:16px;"></div>
+      <div id="successServices" style="font-size:12.5px; color:var(--ivory-dim); margin-bottom:14px; line-height:1.9;"></div>
       <div style="font-size:12px; color:var(--ivory-dim); margin-bottom:18px; line-height:2;">این اطلاعات رو یادداشت کنید یا از این صفحه عکس بگیرید.<br>هر وقت خواستید، با شماره تماستان از تب «نوبت من» می‌توانید دوباره ببینیدش.</div>
       <button class="btn primary" id="successCloseBtn" style="width:100%;">متوجه شدم</button>
     </div>
@@ -576,12 +609,15 @@ var selectedISO = null;
 var currentSlotSel = null; // {iso, time}
 
 // ---------- SMS notification (via our own serverless relay) ----------
-async function notifyOwnerSMS(jalaliDateStr, time, name, phone, note){
+async function notifyOwnerSMS(jalaliDateStr, time, name, phone, note, servicesLabel, totalPrice){
   try{
     await fetch('/api/notify', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ dateLabel: jalaliDateStr, time: time, name: name, phone: phone, note: note })
+      body: JSON.stringify({
+        dateLabel: jalaliDateStr, time: time, name: name, phone: phone, note: note,
+        services: servicesLabel || '', totalPrice: totalPrice || 0
+      })
     });
   }catch(e){ /* silent fail - booking already succeeded, don't block the customer */ }
 }
@@ -768,6 +804,8 @@ async function loadSlots(iso){
 }
 
 // ---------- booking sheet ----------
+var selectedServices = {}; // name -> price, for the currently open booking sheet
+
 function openBookingSheet(iso, time){
   currentSlotSel = {iso:iso, time:time};
   var d = days.find(function(x){ return fmtISO(x)===iso; });
@@ -783,6 +821,50 @@ function openBookingSheet(iso, time){
   document.getElementById('sheetForm').style.display = '';
   document.getElementById('sheetSuccess').style.display = 'none';
   document.getElementById('overlay').classList.remove('hidden');
+  loadServicesForBooking();
+}
+async function loadServicesForBooking(){
+  selectedServices = {};
+  updateServiceTotalDisplay();
+  var wrap = document.getElementById('serviceList');
+  var wrapField = document.getElementById('serviceFieldWrap');
+  wrap.innerHTML = '<div class="loading" style="padding:16px;">در حال بارگذاری خدمات...</div>';
+  var list = await getPrices();
+  if (!list.length){
+    wrapField.style.display = 'none';
+    wrap.innerHTML = '';
+    return;
+  }
+  wrapField.style.display = '';
+  var html = '';
+  list.forEach(function(p, i){
+    html += '<div class="service-row" data-i="'+i+'">'+
+      '<div class="sinfo"><div class="schk"></div><div class="sname">'+escapeHtml(p.name)+'</div></div>'+
+      '<div class="sprice">'+faDigits(Number(p.price||0).toLocaleString())+' تومان</div>'+
+      '</div>';
+  });
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.service-row').forEach(function(row){
+    row.onclick = function(){
+      var i = Number(row.getAttribute('data-i'));
+      var p = list[i];
+      if (selectedServices[p.name] !== undefined){
+        delete selectedServices[p.name];
+        row.classList.remove('selected');
+      } else {
+        selectedServices[p.name] = Number(p.price||0);
+        row.classList.add('selected');
+      }
+      updateServiceTotalDisplay();
+    };
+  });
+}
+function updateServiceTotalDisplay(){
+  var total = 0;
+  Object.keys(selectedServices).forEach(function(k){ total += selectedServices[k]; });
+  var el = document.getElementById('serviceTotalVal');
+  if (el) el.textContent = faDigits(total.toLocaleString()) + ' تومان';
+  return total;
 }
 function closeSheet(){
   document.getElementById('overlay').classList.add('hidden');
@@ -802,6 +884,9 @@ document.getElementById('confirmBtn').onclick = async function(){
   btn.disabled = true;
   msg.textContent = 'در حال ثبت...'; msg.className='msg';
 
+  var serviceNames = Object.keys(selectedServices);
+  var totalPrice = updateServiceTotalDisplay();
+
   var iso = currentSlotSel.iso, time = currentSlotSel.time;
   var latest = await getDateBookings(iso);
   if (latest[time]){
@@ -811,7 +896,11 @@ document.getElementById('confirmBtn').onclick = async function(){
     loadSlots(iso);
     return;
   }
-  latest[time] = { name: name, phone: phone, note: note, ts: Date.now() };
+  latest[time] = {
+    name: name, phone: phone, note: note,
+    services: serviceNames, totalPrice: totalPrice,
+    ts: Date.now()
+  };
   var res = await setDateBookings(iso, latest);
   if (!res){
     msg.textContent = 'خطا در ثبت نوبت. دوباره تلاش کنید.';
@@ -822,11 +911,18 @@ document.getElementById('confirmBtn').onclick = async function(){
   var d2 = days.find(function(x){ return fmtISO(x)===iso; });
   var jd2 = toJalali(d2.getFullYear(), d2.getMonth()+1, d2.getDate());
   var dateLabel = weekdays[d2.getDay()]+' '+faDigits(jd2[2])+' '+jMonths[jd2[1]-1];
-  notifyOwnerSMS(dateLabel, time, name, phone, note);
+  var servicesLabel = serviceNames.join('، ');
+  notifyOwnerSMS(dateLabel, time, name, phone, note, servicesLabel, totalPrice);
 
   // show a clear, persistent confirmation instead of auto-closing right away
   document.getElementById('successDate').textContent = dateLabel;
   document.getElementById('successTime').textContent = 'ساعت ' + faDigits(time);
+  var svcEl = document.getElementById('successServices');
+  if (serviceNames.length){
+    svcEl.innerHTML = escapeHtml(servicesLabel) + '<br><b style="color:var(--gold-soft);">مجموع: ' + faDigits(totalPrice.toLocaleString()) + ' تومان</b>';
+  } else {
+    svcEl.innerHTML = '';
+  }
   document.getElementById('sheetForm').style.display = 'none';
   document.getElementById('sheetSuccess').style.display = '';
   loadSlots(iso);
@@ -967,7 +1063,7 @@ async function searchMyBookings(phone){
     Object.keys(bookings).forEach(function(t){
       var b = bookings[t];
       if (normalizePhone(b.phone) === norm){
-        matches.push({ iso: iso, time: t, name: b.name, note: b.note, d: d });
+        matches.push({ iso: iso, time: t, name: b.name, note: b.note, services: b.services, totalPrice: b.totalPrice, d: d });
       }
     });
   }
@@ -990,9 +1086,14 @@ document.getElementById('myPhoneBtn').onclick = async function(){
   var html = '';
   matches.forEach(function(m){
     var jd = toJalali(m.d.getFullYear(), m.d.getMonth()+1, m.d.getDate());
+    var svcLine = '';
+    if (m.services && m.services.length){
+      svcLine = '<div class="mnote">'+escapeHtml(m.services.join('، '))+' — <b style="color:var(--gold-soft);">'+faDigits(Number(m.totalPrice||0).toLocaleString())+' تومان</b></div>';
+    }
     html += '<div class="my-card">'+
       '<div class="mdate">'+weekdays[m.d.getDay()]+' '+faDigits(jd[2])+' '+jMonths[jd[1]-1]+'</div>'+
       '<div class="mtime">ساعت '+faDigits(m.time)+'</div>'+
+      svcLine+
       (m.note ? '<div class="mnote">'+escapeHtml(m.note)+'</div>' : '')+
       '</div>';
   });
@@ -1109,10 +1210,16 @@ async function loadAllAdminBookings(){
       ' <span style="color:var(--ivory-dim); font-weight:400;">('+faDigits(times.length)+' نوبت)</span></h4>';
     times.forEach(function(t){
       var b = bookings[t];
+      var svcLine = '';
+      if (b.services && b.services.length){
+        svcLine = '<div class="phone" style="direction:rtl; text-align:right; color:var(--gold-soft);">'+
+          escapeHtml(b.services.join('، '))+' — '+faDigits(Number(b.totalPrice||0).toLocaleString())+' تومان</div>';
+      }
       html += '<div class="booking-row">'+
         '<div class="info"><div class="time">'+faDigits(t)+'</div>'+
         '<div class="name">'+escapeHtml(b.name)+'</div>'+
         '<div class="phone">'+escapeHtml(b.phone)+'</div>'+
+        svcLine+
         (b.note ? '<div class="phone" style="direction:rtl; text-align:right; color:var(--gold-soft);">'+escapeHtml(b.note)+'</div>' : '')+
         '</div>'+
         '<button class="cancel-btn" data-iso="'+iso+'" data-time="'+t+'">لغو نوبت</button>'+
