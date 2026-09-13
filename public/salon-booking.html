@@ -347,6 +347,9 @@
   .overlay.hidden{display:none;}
   .sheet{
     width:100%; max-width:480px;
+    max-height:88vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
     background:var(--bg-soft);
     border-radius:22px 22px 0 0;
     padding:22px 20px 28px;
@@ -518,10 +521,6 @@
         <label>شماره تماس</label>
         <input id="custPhone" placeholder="09xxxxxxxxx" maxlength="11" inputmode="numeric" style="direction:ltr; text-align:right;">
       </div>
-      <div class="field">
-        <label>توضیحات (اختیاری)</label>
-        <textarea id="custNote" placeholder="مثلاً نوع خدمت یا درخواست خاص" maxlength="200" rows="3" style="width:100%; background:var(--card); border:1.5px solid transparent; border-radius:10px; padding:12px 14px; color:var(--ivory); font-family:inherit; font-size:14px; resize:vertical;"></textarea>
-      </div>
       <div class="field" id="serviceFieldWrap">
         <label>خدمات مورد نیاز</label>
         <div id="serviceList"></div>
@@ -529,6 +528,10 @@
           <span class="stl-label">مجموع قیمت</span>
           <span class="stl-val" id="serviceTotalVal">۰ تومان</span>
         </div>
+      </div>
+      <div class="field">
+        <label>توضیحات (اختیاری)</label>
+        <textarea id="custNote" placeholder="مثلاً نوع خدمت یا درخواست خاص" maxlength="200" rows="3" style="width:100%; background:var(--card); border:1.5px solid transparent; border-radius:10px; padding:12px 14px; color:var(--ivory); font-family:inherit; font-size:14px; resize:vertical;"></textarea>
       </div>
       <div class="btn-row">
         <button class="btn ghost" id="cancelBtn">انصراف</button>
