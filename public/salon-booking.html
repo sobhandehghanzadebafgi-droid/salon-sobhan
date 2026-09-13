@@ -522,7 +522,7 @@
         <input id="custPhone" placeholder="09xxxxxxxxx" maxlength="11" inputmode="numeric" style="direction:ltr; text-align:right;">
       </div>
       <div class="field" id="serviceFieldWrap">
-        <label>خدمات مورد نیاز</label>
+        <label>خدمات مورد نیاز <span style="color:var(--danger);">*</span></label>
         <div id="serviceList"></div>
         <div class="service-total-bar">
           <span class="stl-label">مجموع قیمت</span>
@@ -883,6 +883,12 @@ document.getElementById('confirmBtn').onclick = async function(){
   var msg = document.getElementById('sheetMsg');
   if (!name){ msg.textContent='لطفاً نام خود را وارد کنید'; msg.className='msg err'; return; }
   if (!phone || phone.length < 10){ msg.textContent='شماره تماس معتبر وارد کنید'; msg.className='msg err'; return; }
+  var serviceFieldVisible = document.getElementById('serviceFieldWrap').style.display !== 'none';
+  if (serviceFieldVisible && Object.keys(selectedServices).length === 0){
+    msg.textContent = 'لطفاً حداقل یک خدمت را انتخاب کنید';
+    msg.className = 'msg err';
+    return;
+  }
   var btn = document.getElementById('confirmBtn');
   btn.disabled = true;
   msg.textContent = 'در حال ثبت...'; msg.className='msg';
